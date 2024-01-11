@@ -38,3 +38,7 @@ def to_polar(vector):
     x, y = vector[0], vector[1]
     angle = atan2(y,x)
     return (length(vector), angle)
+
+def to_str(vector):
+    s = f"({str(vector[0])}, {str(vector[1])})"
+    return s
