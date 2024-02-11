@@ -14,11 +14,15 @@ class FancyArrow3D(FancyArrowPatch):
         FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
         self._verts3d = xs, ys, zs
 
-    def draw(self, renderer):
+    def draw(self, renderer=False):
+        if not renderer:
+            return False
         xs3d, ys3d, zs3d = self._verts3d
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
-        FancyArrowPatch.draw(self, renderer)
+        return FancyArrowPatch.draw(self, renderer)
+
+    do_3d_projection = draw
 
 
 class Polygon3D():
@@ -123,9 +127,9 @@ def draw3d(*objects, origin=True, axes=True, width=6, save_as=None, azim=None, e
                     color=object.color)
 
         elif type(object) == Arrow3D:
-            xs, ys, zs = zip(object.tail, object.tip)
-            a = FancyArrow3D(xs,ys,zs, mutation_scale=20,arrowstyle='-|>', color=object.color)
-            ax.add_artist(a)
+            # xs, ys, zs = zip(object.tail, object.tip)
+            # a = FancyArrow3D(xs,ys,zs, mutation_scale=20,arrowstyle='-|>', color=object.color)
+            draw_segment(object.tail, object.tip, color=object.color, linestyle="solid")
 
         elif type(object) == Segment3D:
             draw_segment(object.start_point, object.end_point, color=object.color, linestyle=object.linestyle)
