@@ -31,9 +31,9 @@ def Axes():
 
 def draw_model(faces, color_map=blues, light=(1,2,3),
                 glRotatefArgs=None,
-                get_matrix=None):
+                get_matrix=None,
+                display=(400,400)):
     pygame.init()
-    display = (400,400)
     window = pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
     cam = camera.default_camera
     cam.set_window(window)
