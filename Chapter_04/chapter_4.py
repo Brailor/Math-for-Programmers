@@ -121,7 +121,7 @@ f = compose_any(prepend("P"), prepend("y"), prepend("t"))
 print(f("hon"))
 
 
-def add(x, y):
+def add_nums(x, y):
     return x + y
 # Exercise 4.7: Write a curry2(f) function that takes a Python function f(x,y) with two arguments and returns a curried version.
 # For instance, once you write g = curry2(f), the two expressions f(x,y) and g(x)(y) should return the same result.
@@ -131,8 +131,8 @@ def curry2(f):
             return f(x,y)
         return fn2
     return fn1
-g = curry2(add)
-print(f"Ex. 4.7: \n\tcurried version = {g(5)(10)}\n\tnormal version = {add(5, 10)}")
+g = curry2(add_nums)
+print(f"Ex. 4.7: \n\tcurried version = {g(5)(10)}\n\tnormal version = {add_nums(5, 10)}")
 
 # Exercise 4.9: Write a function stretch_x(scalar,vector) that scales the target vector by the given factor but only in the x direction. 
 # Also write a curried version stretch_x_by so that stretch_x_by(scalar)(vector) returns the same result.
@@ -146,3 +146,14 @@ def stretch_x_by(scalar):
     return stretch
 
 print(f"Ex. 4.9: \n\toriginal version = {stretch_x(2, (2, 1, 3))}\n\tcurried version = {stretch_x_by(2)((2,1,3))}")
+
+u = (4,9)
+v = (1,1)
+# draw2d.draw2d()
+def S(vec):
+    x,y = vec
+    return (x * x, y * y)
+
+# T(sv) = sT(v)
+print(f"S(u) = {S(u)}, S(v) = {S(v)}\nS(u + v) = {S(add(u, v))}, S(u) + S(v) = {add(S(u), S(v))}")
+print(f"S(su) = {S(scale(0.5, u))}, sS(v) = {scale(0.5, S(u))}")
