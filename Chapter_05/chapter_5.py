@@ -27,6 +27,17 @@ def mul_matrix_by_vector(matrix, vector):
 
 # print(mul_matrix_by_vector(B, v))
 
+def matrix_multiply_by_vector(matrix, vector):
+    return tuple(dot(vector, row) for row in matrix)
+
+def matrix_multiply_by_vector_2(matrix, vector):
+    return tuple(
+        sum(vector_entry * matrix_entry for vector_entry,matrix_entry in zip(row, vector))
+        for row in matrix
+    )
+assert(mul_matrix_by_vector(B, v) == matrix_multiply_by_vector(B, v))
+assert(matrix_multiply_by_vector_2(B, v) == matrix_multiply_by_vector(B, v))
+
 A = (
     (1,1,0),
     (1,0,1),
@@ -47,6 +58,7 @@ def matrix_multiplication(a, b):
         tuple(dot(row, col) for col in zip(*b))
         for row in a
     ]
+
 print(matrix_multiplication(A, B))
  
 def get_rotation_matrix(t):
@@ -137,3 +149,9 @@ def matrix_power(power, matrix):
     return result
 
 print(f"Ex. 5.12:\n\t{matrix_power(3, A)}")
+
+c = (((-1,-1,0),(-2,1,2),(1,0,-1)))
+d = ((1,),(1,),(1,))
+
+print(matrix_multiplication(c, d))
+print(matrix_multiply_by_vector_2(c,(1,1,1)))
