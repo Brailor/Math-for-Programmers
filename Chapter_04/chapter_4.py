@@ -157,3 +157,16 @@ def S(vec):
 # T(sv) = sT(v)
 print(f"S(u) = {S(u)}, S(v) = {S(v)}\nS(u + v) = {S(add(u, v))}, S(u) + S(v) = {add(S(u), S(v))}")
 print(f"S(su) = {S(scale(0.5, u))}, sS(v) = {scale(0.5, S(u))}")
+
+# Exercise 4.19: Write a linear_combination(scalars, *vectors) that takes a list of scalars and the same number of vectors, and returns a single vector.
+# For example, linear_combination([1,2,3], (1,0,0), (0,1,0), (0,0, 1)) should return 1 · (1, 0, 0) + 2 · (0, 1, 0) + 3 · (0, 0, 1) or (1, 2, 3).
+def linear_combination(scalars, *vectors):
+    assert(len(scalars) == len(vectors))
+    vecs = list(vectors)
+    def fn(acc, curr):
+        return add(acc, scale(curr[0], curr[1]))
+
+    return reduce(fn, zip(scalars, vecs), (0,0,0))
+print(linear_combination([]))
+print(linear_combination([1], (1,0,0)))
+print(linear_combination([1, 2, 3], (1,0,0), (0,1,0), (0,0,1)))
