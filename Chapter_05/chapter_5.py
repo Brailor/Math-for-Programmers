@@ -5,19 +5,23 @@ from draw_model import draw_model
 from math import *
 from transforms import *
 from random import *
+from collections.abc import Iterable
 
+# 3x3
 B = (
     (0, 2, 1),
     (0, 1, 0),
     (1, 0, -1)
 )
 
-v = (3, -2, 5)
+# 1x3
+v = ((3,), (-2,), (5,))
+# v = (3, -2, 5)
 
 cols = list(zip(*B))
 print(cols)
 def linear_combination(scalars, *vectors):
-    assert(len(scalars) == len(vectors))
+    # assert(len(scalars) == len(vectors))
 
     return reduce(lambda acc,curr: add(acc, scale(curr[0], curr[1])), zip(scalars, vectors), (0,0,0))
 # print(linear_combination([1, 2, 3], (1,0,0), (0,1,0), (0,0,1)))
@@ -27,16 +31,31 @@ def mul_matrix_by_vector(matrix, vector):
 
 # print(mul_matrix_by_vector(B, v))
 
+def get_dimension(a):
+    rows = len(a)
+    assert(rows != 0)
+    cols = len(a[0])
+    return (rows, cols)
+
+def check_dimensions(a,b):
+    _,a_cols = get_dimension(a)
+    b_rows,_= get_dimension(b)
+    can_multiply = a_cols == b_rows
+    assert(can_multiply)
+    return can_multiply
+
 def matrix_multiply_by_vector(matrix, vector):
+    # check_dimensions(matrix, vector)
     return tuple(dot(vector, row) for row in matrix)
 
 def matrix_multiply_by_vector_2(matrix, vector):
+    # check_dimensions(matrix, vector)
     return tuple(
         sum(vector_entry * matrix_entry for vector_entry,matrix_entry in zip(row, vector))
         for row in matrix
     )
-assert(mul_matrix_by_vector(B, v) == matrix_multiply_by_vector(B, v))
-assert(matrix_multiply_by_vector_2(B, v) == matrix_multiply_by_vector(B, v))
+# assert(mul_matrix_by_vector(B, v) == matrix_multiply_by_vector(B, v))
+# assert(matrix_multiply_by_vector_2(B, v) == matrix_multiply_by_vector(B, v))
 
 A = (
     (1,1,0),
@@ -54,6 +73,7 @@ print(mul_matrix_by_vector(A,b_cols[1]))
 print(mul_matrix_by_vector(A,b_cols[2]))
 
 def matrix_multiplication(a, b):
+    # check_dimensions(a, b)
     return [
         tuple(dot(row, col) for col in zip(*b))
         for row in a
@@ -69,6 +89,11 @@ def get_rotation_matrix(t):
         (sin(seconds),0,cos(seconds))
     )
 # draw_model(load_triangles(), get_matrix=get_rotation_matrix)
+def to_column_vector(vector):
+    result = []
+    for v in vector:
+        result.append((v,))
+    return tuple(result)
 
 # Exercise 5.1:
 # Write a function infer_matrix(n, transformation) that takes a dimension (like 2 or 3)
@@ -82,14 +107,14 @@ def infer_matrix(n, transformation):
     cols = [transformation(v) for v in standard_basis_vectors]
     return tuple(zip(*cols))
 
-print(f"Ex. 5.1:\n\t {infer_matrix(3, rotate_z_by(pi/2))}")
+# print(f"Ex. 5.1:\n\t {infer_matrix(3, rotate_z_by(pi/2))}")
 
 # Exercise 5.3-Mini Project:
 # Write a random_matrix function that generates matrices of a specified size with random whole number entries. Use the function to generate five pairs of 3-by−3 matrices.
 # Multiply each of the pairs together by hand (for practice) and then check your work with the matrix_multiply function.
 def random_matrix(n):
     def random_row():
-        return tuple(randint(-10,10) for j in range(1, n + 1))
+        return tuple(randint(-10,10) for _ in range(1, n + 1))
     cols = [random_row() for i in range(1, n+1)]
     return tuple(zip(*cols))
 
@@ -121,13 +146,13 @@ B = (
     (1,0,-1)
 )
 def transform_matrix_by(matrix):
-    return lambda v: mul_matrix_by_vector(matrix, v)
+    return lambda v: matrix_multiply_by_vector(matrix, v)
 
 transform_a = transform_matrix_by(A)
 transform_b = transform_matrix_by(B)
 compose_a_b = compose(transform_a, transform_b)
 
-print(f"Ex. 5.10:\n\tWith infer_matrix: {infer_matrix(3, compose_a_b)}\n\tWith matrix multiplication: {matrix_multiplication(A,B)}")
+# print(f"Ex. 5.10:\n\tWith infer_matrix: {infer_matrix(3, compose_a_b)}\n\tWith matrix multiplication: {matrix_multiplication(A,B)}")
 
 # Exercise 5.11-Mini Project: Find two, 2-by−2 matrices, neither of which is the identity matrix I2, but whose product is the identity matrix.
 # The identity matrix for 2D is: 
@@ -153,5 +178,31 @@ print(f"Ex. 5.12:\n\t{matrix_power(3, A)}")
 c = (((-1,-1,0),(-2,1,2),(1,0,-1)))
 d = ((1,),(1,),(1,))
 
-print(matrix_multiplication(c, d))
-print(matrix_multiply_by_vector_2(c,(1,1,1)))
+# print(matrix_multiplication(c, d))
+# print(matrix_multiply_by_vector_2(c,(1,1,1)))
+
+# Exercise 5.15
+# three_by_two = ((1,2),(3,4),(5,6))
+# four_by_five = ((1,2,3,4,5),(6,7,8,9,10),(11,12,13,14,15),(16,17,18,19,20)) 
+# print(f"Ex. 5.15:\n\t {matrix_multiplication(three_by_two, four_by_five)}")
+
+# Exercise 5.18: Write a function that turns a column vector into a row vector, or vice versa.
+# Flipping a matrix on its side like this is called transposition and the resulting matrix is called the transpose of the original.
+# row vector = ((1, 2, 3),) dimensions = 3x1
+# column vector = ((1,), (2,), (3,)) dimensions = 1x3
+def transpose(matrix):
+   return tuple(zip(*matrix))
+
+print(f"Ex. 5.18:\n\t row-vector = {transpose(((1,2,3),))}, column-vector = {transpose(((1,),(2,),(3,)))}")
+
+# Exercise 5.22: Show by example that the infer_matrix function from a previous exercise can create matrices 
+# for linear functions whose inputs and outputs have different dimensions.
+def project_to_2d_by_z(v):
+    projection = ((1,0,0), (0, 1, 0))
+    return matrix_multiply_by_vector(projection, v)
+
+
+
+# print(to_column_vector((1,2,3)))
+
+print(f"Ex. 5.22: \n\t {infer_matrix(3, project_to_2d_by_z )}")
