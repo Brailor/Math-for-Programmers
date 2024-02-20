@@ -6,6 +6,8 @@ from math import *
 from transforms import *
 from random import *
 from collections.abc import Iterable
+from draw3d import *
+from draw2d import *
 
 # 3x3
 B = (
@@ -201,8 +203,56 @@ def project_to_2d_by_z(v):
     projection = ((1,0,0), (0, 1, 0))
     return matrix_multiply_by_vector(projection, v)
 
-
-
 # print(to_column_vector((1,2,3)))
 
 print(f"Ex. 5.22: \n\t {infer_matrix(3, project_to_2d_by_z )}")
+dino_vectors = [(6,4), (3,1), (1,2), (-1,5), (-2,5), (-3,4), (-4,4),
+   (-5,3), (-5,2), (-2,2), (-5,1), (-4,0), (-2,1), (-1,0), (0,-3),
+   (-1,-4), (1,-4), (2,-3), (1,-2), (3,-1), (5,1)
+]
+def polygon_segments_3d(points,color='blue'):
+   count = len(points)
+   return [Segment3D(points[i], points[(i+1) % count],color=color) for i in range(0,count)]
+
+dino_3d = [(x,y,1) for x,y in dino_vectors]
+rotate_and_translate = ((0,-1,3),(1,0,1),(0,0,1))
+dino_3d_translated_and_rotated = [mul_matrix_by_vector(rotate_and_translate, vec) for vec in dino_3d]
+# draw3d(
+#    Points3D(*dino_3d, color='blue'),
+#    *polygon_segments_3d(dino_3d),
+#    Points3D(*dino_3d_translated_and_rotated, color='green'),
+#    *polygon_segments_3d(dino_3d_translated_and_rotated, color='green'),
+# )
+
+def translate_3d(translation):
+    def new_function(target):
+        a,b,c = translation
+        x,y,z = target
+        matrix = ((1,0,0,a),(0,1,0,b),(0,0,1,c),(0,0,0,1))
+        vector = (x,y,z,1)
+        x_out, y_out, z_out, _ = multiply_matrix_vector(matrix,vector)
+        return (x_out,y_out,z_out)
+    return new_function
+
+# draw_model(polygon_map(translate_3d((2,2,-3)), load_triangles()))
+
+# Exercise 5.26: Show that the 3D “magic” matrix transformation does not work
+# if you move a 2D figure such as the dinosaur we have been using to the plane z = 2. 
+# What happens instead?
+dino_3d = [(x,y,1) for x,y in dino_vectors]
+# dino_3d = [(x,y,2) for x,y in dino_vectors]
+rotate_and_translate = ((1,0,3),(0,1,1),(0,0,1))
+dino_3d_translated_and_rotated = [mul_matrix_by_vector(rotate_and_translate, vec) for vec in dino_3d]
+# draw2d(
+    # Polygon2D(*dino_vectors, color='blue'),
+    # Polygon2D(*[(x,y) for x,y,_ in dino_3d_translated_and_rotated], color='red')
+    # )
+
+# Exercise 5.27: Come up with a matrix to translate the dinosaur by −2 units in the x direction and −2 units in the y direction.
+# Execute the transformation and show the result.
+t2 = ((1,0,-2),(0,1,-2),(0,0,1))
+d_t2 = [mul_matrix_by_vector(t2, vec) for vec in dino_3d]
+draw2d(
+    Polygon2D(*dino_vectors, color='blue'),
+    Polygon2D(*[(x,y) for x,y,_ in d_t2], color='red')
+    )
