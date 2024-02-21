@@ -76,10 +76,10 @@ print(mul_matrix_by_vector(A,b_cols[2]))
 
 def matrix_multiplication(a, b):
     # check_dimensions(a, b)
-    return [
+    return tuple(
         tuple(dot(row, col) for col in zip(*b))
         for row in a
-    ]
+    )
 
 print(matrix_multiplication(A, B))
  
@@ -252,7 +252,34 @@ dino_3d_translated_and_rotated = [mul_matrix_by_vector(rotate_and_translate, vec
 # Execute the transformation and show the result.
 t2 = ((1,0,-2),(0,1,-2),(0,0,1))
 d_t2 = [mul_matrix_by_vector(t2, vec) for vec in dino_3d]
+# draw2d(
+#     Polygon2D(*dino_vectors, color='blue'),
+#     Polygon2D(*[(x,y) for x,y,_ in d_t2], color='red')
+    # )
+# Exercise 5.29−Mini Project: Find a 3×3 matrix that rotates a 2D figure in the plane z = 1 by 45°,
+# decreases its size by a factor of 2, and translates it by the vector (2, 2).
+# Demonstrate that it works by applying it to the vertices of the dinosaur.
+# 
+# how to rotate by 45? to rotate a matrix by 90 we transpose it
+v = (5, 5)
+v_rot = mul_matrix_by_vector(((-1,0),(0,1)),v)
+r = ((1,0,0),(0,1,0),(0,0,1))
+seconds = pi/4
+compose_a_b
+m = ((cos(seconds),-sin(seconds), 0),(sin(seconds),cos(seconds), 0), (0,0,1))
+m2 = ((0.5,0,0),(0,0.5,0), (0,0,1))
+m3 = ((1,0,2),(0,1,2),(0,0,1))
+m_mul = matrix_multiplication(m2,m)
+((a,b,_),(c,d,_),(_,_,_)) = m_mul
+print(a,b,c,d)
+m_mul2 = ((a,b,2), (c,d,2), (0,0,1))
+d3d_t3 = [mul_matrix_by_vector(m_mul, v) for v in dino_3d]
+d3d_t4 = [mul_matrix_by_vector(m_mul2, v) for v in dino_3d]
+d2d_t3 = [(x,y) for x,y,_ in d3d_t3]
+d2d_t4 = [(x,y) for x,y,_ in d3d_t4]
+print(f"og: {d2d_t3[1]}, rotated: {rotate2d(pi/4,d2d_t3[1])}")
+# print(f"length of og: {length(d2d_t3[1])}, length of rotated: {length(rotate2d(pi/4,d2d_t3[1]))}")
 draw2d(
-    Polygon2D(*dino_vectors, color='blue'),
-    Polygon2D(*[(x,y) for x,y,_ in d_t2], color='red')
+    Polygon2D(*dino_vectors, color="red"),
+      Polygon2D(*d2d_t4, color="blue"),
     )
