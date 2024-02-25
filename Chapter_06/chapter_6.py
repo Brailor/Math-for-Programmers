@@ -4,16 +4,25 @@ from typing import Any
 from vectors import add, scale
 from math import isclose,sin
 from datetime import datetime
+from random import uniform
 
 from json import loads, dumps
 from pathlib import Path
 from datetime import datetime
-from plot import plot
+
 
 contents = Path('cargraph.json').read_text()
 cg = loads(contents)
 cleaned = []
 
+def random_5_by_3_matrix(min=-10, max=10):
+    return Matrix_5_x_3(random_matrix(5,3, min, max))
+
+def random_matrix(rows,cols, min, max):
+    return tuple(
+            tuple(uniform(min, max) for _ in range(0, cols))
+            for _ in range(0, rows)
+    )
 def parse_date(s):
     input_format="%m/%d - %H:%M"
     return datetime.strptime(s,input_format).replace(year=2018)
@@ -337,5 +346,112 @@ print(f"Ex. 6.13:\n\t{(fn1 + fn2)(3,10)}")
 
 # Exercise 6.17-Mini Project: Write a LinearMap3d_to_5d class inheriting from Vector that uses a 5×3 matrix as its data but implements __call__ to act as a linear map from ℝ3 to ℝ5. 
 # Show that it agrees with Matrix5_by_3 in its underlying computations and that it independently passes the defining properties of a vector space.
+class LinearMap3d_to_5d(Vector):
+    def __init__(self, data: Matrix_5_x_3) -> None:
+        self.data = data
+    def add(self, other: Self) -> Self:
+        return self.data.add(other)
+    def scale(self, scalar: int) -> Self:
+        return self.data.scale(scalar)
+    @classmethod
+    def zero(cls):
+        return cls(Matrix_5_x_3.zero())
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.data.matrix})"
+    def __call__(self, arg) -> Any:
+        return arg
+
+l1 = LinearMap3d_to_5d(random_5_by_3_matrix(1,5))
+
 print("=====================================================")
 print(f"Ex. 6.17:\n\t")
+print(l1)
+
+# class representation of the line funciton
+class LinearFunction(Vector):
+    def __init__(self, a: int, b: int) -> None:
+        self.a = a
+        self.b = b
+    
+    def add(self, other: Self) -> Self:
+        return LinearFunction(self.a + other.a, self.b + other.b)
+    
+    def scale(self, scalar: int) -> Self:
+        return LinearFunction(self.a * scalar, self.b * scalar)
+    
+    def __call__(self, x: int) -> Any:
+        return self.a * x + self.b
+
+    @classmethod
+    def zero(cls):
+        return LinearFunction(0, 0)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.a}, {self.b})"
+
+class LinearFunction2(Vec2):
+    def __call__(self, x: int) -> Any:
+        return self.x * x + self.y
+class QuadraticFunciton(Vector):
+    def __init__(self, a: int, b: int, c: int) -> None:
+        self.a = a
+        self.b = b
+        self.c = c
+    
+    def add(self, other: Self) -> Self:
+        return QuadraticFunciton(self.a + other.a, self.b + other.b, self.c + other.c)
+    
+    def scale(self, scalar: int) -> Self:
+        return QuadraticFunciton(self.a * scalar, self.b * scalar, self.c * scalar)
+    
+    def __call__(self, x: int) -> Any:
+        return x * x * self.a + self.b * x + self.c
+
+    @classmethod
+    def zero(cls):
+        return QuadraticFunciton(0, 0, 0)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.a}, {self.b}, {self.c})"
+
+qf = QuadraticFunciton(2, 3,4)
+print(qf(3))
+# a=2  a^2 + a + b
+# x=3, y=4  3*a^2 + 4*a + b
+
+# Exercise 6.24: Show that three vectors (1, 0), (1, 1), and (−1, 1)
+# are linearly dependent by writing each one as a linear combination of the other two.
+u,v,w= Vec2(1,0),Vec2(1,1),Vec2(-1,1)
+# w = -1*u +v
+# u = 0.5*v - 0.5*w
+# v =  2*u + w
+print("=====================================================")
+print(f"Ex. 6.24:\n\tu={u},v={v},w={w}\n\t\tw=-2*u + v ={-2*u + v} , u=0.5*v - 0.5*w = {0.5*v - 0.5*w}, v = 2*u + w = {2*u + w}")
+# Exercise 6.37-Mini Project: The vector space of all polynomials is an infinite-dimensional subspace.
+# Implement that vector space as a class and describe a basis (which must be an infinite set!).
+class Polynomial(Vector):
+    def __init__(self, *coefficients) -> None:
+        self.coefficients = coefficients
+    
+    def add(self, other: Self) -> Self:
+        return Polynomial(
+            list(a + b for a,b in zip(self.coefficients, other.coefficients))
+        )
+    
+    def scale(self, scalar: int) -> Self:
+        return Polynomial(map(lambda c: c * scalar, self.coefficients))
+    
+    def __call__(self, x: int) -> Any:
+        return sum(coefficient * x ** power 
+                  for (power,coefficient) 
+                  in enumerate(self.coefficients))
+    @classmethod
+    def zero(cls):
+        return Polynomial(0)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.coefficients})"
+
+
+print("=====================================================")
+print(f"Ex. 6.37\n\t")
+p1 = Polynomial(1, 2, 3)
+p2 = Polynomial(4, 3, 2)
+print(p1 + p2)
