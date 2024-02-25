@@ -76,3 +76,47 @@ for _ in range(100):
     a,b = random_scalar(),random_scalar()
     u, v, w = random_car_for_sale(), random_car_for_sale(), random_car_for_sale()
     test(CarForSale.zero(), car_same, a,b,u,v,w)
+
+# Exercise 6.11-Mini Project: Testing equality of functions is difficult. Do your best to write a function to test whether two functions are equal.
+f = Function(lambda x: x)
+g = Function(lambda x: x)
+
+def random_function():
+    r = int(uniform(-10, 10))
+    return Function(lambda x: x + r )
+
+def functions_same_approx(f,g):
+    results = []
+    for _ in range(0, 10):
+        i = uniform(-10, 10)
+        results.append(isclose(f(i), g(i)))
+    return all(results)
+
+for _ in range(100):
+    a,b = random_scalar(),random_scalar()
+    u, v, w = random_function(), random_function(), random_function()
+    test(Function.zero(), functions_same_approx, a,b,u,v,w)
+
+
+# Exercise 6.16: Unit test the Matrix5_by_3 class to demonstrate that it obeys the defining properties of a vector space.
+def random_5_by_3_matrix():
+    return Matrix_5_x_3(random_matrix(5,3))
+
+def random_matrix(rows,cols):
+    return tuple(
+            tuple(uniform(-10, 10) for _ in range(0, cols))
+            for _ in range(0, rows)
+    )
+    
+
+def approx_equal_matrix_5_by_3(m1,m2):
+   return all([
+       isclose(m1.matrix[i][j],m2.matrix[i][j]) 
+       for j in range(0,3)
+       for i in range(0,5)
+   ])
+   
+for _ in range(100):
+    a,b = random_scalar(),random_scalar()
+    u, v, w = random_5_by_3_matrix(), random_5_by_3_matrix(), random_5_by_3_matrix() 
+    test(Matrix_5_x_3.zero(),approx_equal_matrix_5_by_3, a,b,u,v,w)

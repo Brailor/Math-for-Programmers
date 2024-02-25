@@ -246,6 +246,8 @@ class Matrix(Vector):
         )
     def __repr__(self) -> str:
         return f"Matrix_{self.rows()}_x_{self.columns()}({self.matrix})"
+    def __eq__(self, other: Self) -> bool:
+        return self.matrix == other.matrix
 
 # ((1,2,3),(4,5,6),(7,8,9),(10,11,12),(13,14,15))
 # +
@@ -276,10 +278,14 @@ print(Matrix_2_x_5(b))
 # implement a __call__ method so you can treat it as a function.
 # You should be able to run plot([f,g,f+g,3*g],−10,10).
 class Function(Vector):
-    def __init__(self, fn) -> None:
+    def __init__(self, fn: Callable) -> None:
         self.fn = fn
     def add(self, other: Self):
         return Function(lambda x: other(x) + self(x))
+    # def __eq__(self, other: Self) -> bool:
+    #     fn1_code = self.fn.__code__.co_code
+    #     fn2_code = other.fn.__code__.co_code
+    #     return fn1_code == fn2_code
 
     def scale(self, scalar: int):
         return Function(lambda x: self(x) * scalar)
@@ -293,7 +299,43 @@ class Function(Vector):
 
 f = Function(lambda x: x + 1)
 g = Function(lambda x: x * 2)
+h = Function(lambda x: x+1)
+def add_one(a):
+    return a + 1
+k = Function(add_one)
 f_g = f + g
+g_f = g + f
 # print(f + g)
 print(f_g(2))
 print((f*2)(5))
+print(f == g)
+print(f == h)
+print(f == k)
+print(f_g == g_f)
+
+# Exercise 6.13-Mini Project: Implement a class Function2(Vector) that stores a function of two variables like f(x, y) = x + y.
+class Function2(Vector):
+    def __init__(self, fn: Callable) -> None:
+        self.fn = fn
+    def add(self, other: Self):
+        return Function2(lambda x,y: other(x,y) + self(x,y))
+    def scale(self, scalar: int):
+        return Function2(lambda x, y: self(x, y) * scalar)
+    @classmethod
+    def zero(cls):
+        return Function2(lambda x, y: 0)
+    def __call__(self, arg1, arg2) -> Any:
+        return self.fn(arg1, arg2)
+
+fn1 = Function2(lambda x,y: x + y)
+fn2 = Function2(lambda x,y: x - y + 1)
+
+print("=====================================================")
+print(f"Ex. 6.13:\n\t{(fn1 + fn2)(3,10)}")
+
+
+
+# Exercise 6.17-Mini Project: Write a LinearMap3d_to_5d class inheriting from Vector that uses a 5×3 matrix as its data but implements __call__ to act as a linear map from ℝ3 to ℝ5. 
+# Show that it agrees with Matrix5_by_3 in its underlying computations and that it independently passes the defining properties of a vector space.
+print("=====================================================")
+print(f"Ex. 6.17:\n\t")
