@@ -6,27 +6,25 @@ import pygame
 import vectors
 import math
 
-WIDTH = 400 * 2
-HEIGHT = 400 * 2
+WIDTH = 400
+HEIGHT = 400
 RED = (250, 0, 0)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 
+# Exercise 7.1: Implement a transformed() method on the PolygonModel that returns the points of the model translated by
+# the object’s x and y attributes and rotated by its rotation_angle attribute.
 class PolygonModel():
     def __init__(self, points: List[float]) -> None:
         self.points = points
         self.rotation_angle = 0
         self.x = 0
         self.y = 0
-
+    
     def transformed(self):
-        rotated = [vectors.rotate2d(self.rotation_angle, v) for v in self.points]
-        return [vectors.add((self.x,self.y),v) for v in rotated]
+        ps = [vectors.rotate2d(self.rotation_angle, vec) for vec in self.points]
+        return [(self.x + x, self.y + y) for (x,y) in ps]
 
-    def move(self, milliseconds):
-        dx, dy = self.vx * milliseconds / 1000.0, self.vy * milliseconds / 1000.0
-        self.x, self.y = vectors.add((self.x,self.y), (dx,dy))
-        self.rotation_angle += self.angular_velocity * milliseconds / 1000.0
 
 class Ship(PolygonModel):
     def __init__(self) -> None:
@@ -42,10 +40,18 @@ class Asteroid(PolygonModel):
         vs = [(vectors.to_cartesian((uniform(0.5, 1.0), math.pi * i * 2 / sides ))) for i in range(sides)]
         super().__init__(vs)
 
+    def does_intersect(self) -> bool:
+        return False
+
+# Exercise 7.2: Write a function to_pixels(x,y) that takes a pair of x − and y-coordinates in the square where −10 < x < 10 and −10 < y < 10
+# and maps them to the corresponding PyGame x and y pixel coordinates, each ranging from 0 to 400.
 # transforms our representation of pixel to
 # pygames representation of a pixel
-def to_pixels(x: float, y: float) -> (float, float):
-    return (WIDTH/2 + WIDTH * x / 20, HEIGHT/2 - HEIGHT * y / 20)
+def to_pixels(x,y):
+    mapped_x = WIDTH / 2 + (x * WIDTH / 20)
+    mapped_y = HEIGHT / 2 + (y * HEIGHT / 20)
+    return (mapped_x, mapped_y)
+
 
 def draw_polygon(screen, polygon_model, color = GREEN):
     pixel_points = [to_pixels(x, y) for (x,y) in polygon_model.transformed()]
@@ -107,10 +113,10 @@ def main():
         draw_polygon(screen,ship)
 
         for asteroid in asteroids:
-            # if keys[pygame.K_SPACE] and asteroid.does_intersect(laser):
-            #     asteroids.remove(asteroid)
-            # else:
-            draw_polygon(screen, asteroid, color=GREEN)
+            if keys[pygame.K_SPACE] and asteroid.does_intersect(laser):
+                asteroids.remove(asteroid)
+            else:
+                draw_polygon(screen, asteroid, color=GREEN)
 
 
         pygame.display.flip()
