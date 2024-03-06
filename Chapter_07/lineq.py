@@ -47,3 +47,37 @@ def segment_check(s1,s2):
         vectors.distance(v1, (x,y)) <= d2,
         vectors.distance(v2, (x,y)) <= d2
     ]
+
+# Exercise 7.19−Mini Project: Write a Python function that takes three 3D points as inputs 
+# and returns the standard form equation of the plane that they lie in.
+# For instance, if the standard form equation is ax + by + cz = d, the function could return the tuple (a, b, c, d).
+# Hint: Differences of any pairs of the three vectors are parallel to the plane, so cross products of the differences are perpendicular.
+def standard_form_3d(v1,v2,v3):
+    diff1 = vectors.subtract(v3, v1)
+    diff2 = vectors.subtract(v2, v1)
+    a,b,c = vectors.cross(diff1, diff2)
+    d = vectors.dot(v1, (a, b, c))
+    return (a,b,c,d)
+
+
+# Exercise 7.27: How can you write the vector (5, 5) as a linear combination of (10, 1) (3, 2)?
+M1 = np.array(
+    (
+    (10, 1),
+    (3, 2)
+    )
+)
+D1 = np.array((5,5))
+res = np.linalg.solve(M1, D1)
+print(f"Ex. 7.27:\n\t {res}")
+# Exercise 7.28: Write the vector (3, 0, 6, 9) as a linear combination of the vectors (0, 0, 1, 1), (0, −2, −1, −1), (1, −2, 0, 2), and (0, 0, −2, 1).
+M2 = np.array((
+    (0, 0,1,0),
+    (0,-2,-2,0),
+    (1,-1,0,-2),
+    (1,-1,2,1)
+))
+D2 = np.array((3,0,6,9))
+res = np.linalg.solve(M2, D2)
+
+print(f"Ex. 7.28:\n\t {res}")
