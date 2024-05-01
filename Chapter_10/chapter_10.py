@@ -6,6 +6,49 @@ from abc import ABCMeta, abstractmethod
 def contains(expression, variable):
     return variable in distinct_variables(expression)
 
+# Exercise 10.10: Write a distinct_functions function that takes an expression
+# as an argument and returns the distinct, named functions (like sin or ln) that appear in the expression.
+#ex: Sum(Apply(Function("sin"), Number("5"), Number("5")))
+def distinct_functions(expression):
+    distinct_funcs = set()
+    def aux(acc: Set, curr: Expression):
+        if isinstance(curr, Function):
+            acc.add(curr.name)
+            return acc
+        elif isinstance(curr, Sum):
+            for exp in curr.exps:
+                aux(acc, exp)
+        elif isinstance(curr, Product):
+            aux(acc, curr.expr1)
+            aux(acc, curr.expr2)
+        elif isinstance(curr, Apply):
+            aux(acc, curr.function)
+            aux(acc, curr.argument)
+        elif isinstance(curr, Power):
+            aux(acc, curr.base)
+            aux(acc, curr.exponent)
+            
+        return acc
+
+    return aux(distinct_funcs, expression)
+
+# Exercise 10.11: Write a function contains_sum that takes an expression and returns True if it contains a Sum, and False otherwise.
+def contains_sum(expression) -> bool:
+    def aux(exp: Expression):
+        if isinstance(exp, Sum):
+            return True
+        elif isinstance(exp, Power):
+            return aux(exp.exponent) or aux(exp.base)
+        elif isinstance(exp, Product):
+            return aux(exp.expr1) or aux(exp.expr2) 
+        elif isinstance(exp, Apply):
+            return aux(exp.argument)
+        else:
+            return False
+
+
+    return aux(expression) 
+
 
 def f(x):
     return (3 * x ** 2 + x) * sin(x)
@@ -55,8 +98,10 @@ def distinct_variables(maybe_variable):
 # For instance, class Variable() would become class Variable(Expression).
 # Then overload the Python arithmetic operations +, -, *, and / so that they produce Expression objects.
 # For instance, the code 2*Variable("x")+3 should yield Sum(Product(Number(2),Variable("x")),Number(3)).
-
 class Expression(metaclass = ABCMeta):
+    # @abstractmethod
+    # def __repr__(self) -> str:
+    #     pass
     @abstractmethod
     def expand(self):
         pass
@@ -86,6 +131,9 @@ class Number(Expression):
         return self.number
     def expand(self):
         return self
+    # Number(4).__repr__() => 4
+    def __repr__(self) -> str:
+        return f"{self.number}"
 
 class Sum(Expression):
     # 5 + A(x + y) => 5 + Ax + Ay
@@ -95,6 +143,16 @@ class Sum(Expression):
         return sum(*[exp.evaluate(**bindings) for exp in self.exps])
     def __init__(self, *exps):
         self.exps = exps
+    # Sum(Number(4), Variable("x")).__repr__() => 4 + "x"
+    # Sum(Number(4), Variable("x"), Number(5)).__repr__() => 4 + "x" + 5
+    # Sum(Number(4), Variable("x"), Product(Number(1), Number(5))).__repr__() => 4 + "x" + 5 + 1 * 5
+    def __repr__(self) -> str:
+        res = ""
+        inter = [exp.__repr__() for exp in self.exps]
+        for i in range(0, len(inter) - 1):
+            res += f"({inter[i]} + "
+        res += f"{inter[-1]})"
+        return res
 
 class Power(Expression):
     def expand(self):
@@ -104,6 +162,8 @@ class Power(Expression):
     def __init__(self, base, exponent) -> None:
         self.base = base
         self.exponent = exponent
+    def __repr__(self) -> str:
+        return f"{self.base.__repr__()}^{self.exponent.__repr__()}"
 
 class Variable(Expression):
     def __init__(self, symbol: str) -> None:
@@ -115,6 +175,8 @@ class Variable(Expression):
             return bindings[self.symbol]
         except:
             return KeyError(f"Variable {self.symbol} is not bound.")
+    def __repr__(self) -> str:
+        return f"{self.symbol}"
 
 class Product(Expression):
     def __init__(self, expr1: Expression, expr2: Expression) -> None:
@@ -134,6 +196,8 @@ class Product(Expression):
 
     def evaluate(self, **bindings):
         return self.expr1.evaluate(**bindings) * self.expr2.evaluate(**bindings)
+    def __repr__(self) -> str:
+        return f"{self.expr1.__repr__()} * {self.expr2.__repr__()}"
 
 
 class Function():
