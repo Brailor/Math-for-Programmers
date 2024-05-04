@@ -4,68 +4,99 @@ import vectors
 from math import pi, sqrt, cos, sin, atan2
 from random import randint, uniform
 from linear_solver import do_segments_intersect
-import sys
+from helpers import *
 
 # DEFINE OBJECTS OF THE GAME
 
+from typing import *
+from random import randint,uniform
+from functools import *
+from itertools import *
+import pygame 
+import vectors
+import math
+import lineq
+
+WIDTH = 400
+HEIGHT = 400
+RED = (250, 0, 0)
+GREEN = (0, 255, 0)
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+ACCELERATION = 3
+DECLERATION = 1.3
+
 class PolygonModel():
-    def __init__(self,points):
+    def __init__(self, points: List[float]) -> None:
         self.points = points
         self.rotation_angle = 0
         self.x = 0
         self.y = 0
         self.vx = 0
         self.vy = 0
-        self.angular_velocity = 0
-        self.gravity = 0
-        self.draw_center = False
+        self.draw_center = False 
+        self.graviyt = 0
 
+    def does_collide(self, other_polygon: Type[Self]):
+        for other_segment in other_polygon.segments():
+            if self.does_segment_intersect(other_segment):
+                    return True
+        return False
+    
     def transformed(self):
-        rotated = [vectors.rotate2d(self.rotation_angle, v) for v in self.points]
-        return [vectors.add((self.x,self.y),v) for v in rotated]
-
-    def move(self, milliseconds):
-        dx, dy = self.vx * milliseconds / 1000.0, self.vy * milliseconds / 1000.0
-        self.x, self.y = vectors.add((self.x,self.y), (dx,dy))
-        self.rotation_angle += self.angular_velocity * milliseconds / 1000.0
+        ps = map(lambda vec: vectors.rotate2d(self.rotation_angle, vec), self.points)
+        return [(self.x + x, self.y + y) for (x,y) in ps]
 
     def segments(self):
         point_count = len(self.points)
         points = self.transformed()
-        return [(points[i], points[(i+1)%point_count])
+        return [(points[i], points[(i+1) % point_count])
                 for i in range(0,point_count)]
 
-    def does_collide(self, other_poly):
-        for other_segment in other_poly.segments():
-            if self.does_intersect(other_segment):
-                return True
-        return False
-
-    def does_intersect(self, other_segment):
+    def does_segment_intersect(self, other_segment):
         for segment in self.segments():
-            if do_segments_intersect(other_segment,segment):
+            if lineq.do_segments_intersect(segment, other_segment):
                 return True
         return False
+    
+    def move(self, milliseconds):
+        dx, dy = (self.vx * milliseconds / 1000.0, self.vy * milliseconds / 1000.0)
+        next_pos_vector = vectors.add((self.x, self.y), (dx, dy))
+        self.x = next_pos_vector[0]
+        self.y = next_pos_vector[1]
+
+        if self.x < -10:
+            self.x += 20
+        if self.y < -10:
+            self.y += 20
+        if self.x > 10:
+            self.x -= 20
+        if self.y > 10:
+            self.y -= 20
+
 
 class Ship(PolygonModel):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__([(0.5,0), (-0.25,0.25), (-0.25,-0.25)])
-
     def laser_segment(self):
-        dist = 20. * sqrt(2)
-        x,y = self.transformed()[0]
-        return (x,y), (x + dist * cos(self.rotation_angle), y + dist*sin(self.rotation_angle))
-
+        dist = 20.0 * math.sqrt(2)
+        tip_x,tip_y = self.transformed()[0]
+        return ((tip_x, tip_y), (tip_x + dist * math.cos(self.rotation_angle), tip_y + dist * math.sin(self.rotation_angle)))
 
 class Asteroid(PolygonModel):
-    def __init__(self):
-        sides = randint(5,9)
-        vs = [vectors.to_cartesian((uniform(0.5,1.0), 2 * pi * i / sides))
-                for i in range(0,sides)]
+    def __init__(self, vecs=None) -> None:
+        vs = []
+        if vecs == None or len(vecs) == 0:
+            sides = randint(5,9)
+            vs = [(vectors.to_cartesian((uniform(0.5, 1.0), math.pi * i * 2 / sides ))) for i in range(sides)]
+        else:
+            vs = vecs 
         super().__init__(vs)
-        self.vx = 0 # uniform(-1,1)
-        self.vy = 0 # uniform(-1,1)
-        self.angular_velocity = uniform(-pi/2,pi/2)
+        self.vx = uniform(-1, 1)
+        self.vy = uniform(-1, 1)
+
+    def does_intersect(self, other_segment) -> bool:
+        return super().does_segment_intersect(other_segment) 
 
 class BlackHole(PolygonModel):
     def __init__(self, gravity):
@@ -74,63 +105,24 @@ class BlackHole(PolygonModel):
         self.gravity = gravity
         self.draw_center = True
 
-# INITIALIZE GAME STATE
+
 
 ship = Ship()
 
 asteroid_count = 10
-asteroids = [Asteroid() for _ in range(0,asteroid_count)]
-
-for ast in asteroids:
-    ast.x = randint(-9,9)
-    ast.y = randint(-9,9)
-
-
-# HELPERS / SETTINGS
-
-BLACK = (  0,   0,   0)
-WHITE = (255, 255, 255)
-BLUE =  (  0,   0, 255)
-GREEN = (  0, 255,   0)
-RED =   (255,   0,   0)
-
-width, height = 400, 400
-
-def to_pixels(x,y):
-    return (width/2 + width * x / 20, height/2 - height * y / 20)
-
-def draw_poly(screen, polygon_model, color=GREEN, fill=False):
-    pixel_points = [to_pixels(x,y) for x,y in polygon_model.transformed()]
-    if fill:
-        pygame.draw.polygon(screen, color, pixel_points, 0)
-    else:
-        pygame.draw.aalines(screen, color, True, pixel_points, 10)
-    if polygon_model.draw_center:
-        cx, cy = to_pixels(polygon_model.x, polygon_model.y)
-        pygame.draw.circle(screen, color, (int(cx), int(cy)), 4, 4)
-
-def draw_segment(screen, v1,v2,color=RED):
-    pygame.draw.aaline(screen, color, to_pixels(*v1), to_pixels(*v2), 10)
-
-screenshot_mode = False
-
-# INITIALIZE GAME ENGINE
+asteroids = list(map(random_x_y, [Asteroid() for _ in range(asteroid_count)]))
+print(f"Ship: {ship}, asteroids: {asteroids}")
 
 def main():
     pygame.init()
 
-    screen = pygame.display.set_mode([width,height])
-
+    screen = pygame.display.set_mode([WIDTH,HEIGHT])
+    
     pygame.display.set_caption("Asteroids!")
+    black_hole = BlackHole(0.1)
 
     done = False
     clock = pygame.time.Clock()
-
-    # p key prints screenshot (you can ignore this variable)
-    p_pressed = False
-
-    black_hole = BlackHole(0.1)
-
     while not done:
 
         clock.tick()
@@ -145,22 +137,30 @@ def main():
         keys = pygame.key.get_pressed()
 
         for ast in asteroids:
+            # pass
             ast.move(milliseconds)
+        
+        if keys[pygame.K_UP]:
+            ax = ACCELERATION * math.cos(ship.rotation_angle)
+            ay = ACCELERATION * math.sin(ship.rotation_angle)
+            ship.vx += ax * milliseconds / 1000.0
+            ship.vy += ay * milliseconds / 1000.0
+
+        if keys[pygame.K_DOWN]:
+            ax = DECLERATION * math.cos(ship.rotation_angle)
+            ay = DECLERATION * math.sin(ship.rotation_angle)
+            ship.vx -= ax * milliseconds / 1000.0
+            ship.vy -= ay * milliseconds / 1000.0
+        
+        ship.move(milliseconds)
 
         if keys[pygame.K_LEFT]:
-            ship.rotation_angle += milliseconds * (2*pi / 1000)
+            ship.rotation_angle -= milliseconds * (2* math.pi / 1000)
 
         if keys[pygame.K_RIGHT]:
-            ship.rotation_angle -= milliseconds * (2*pi / 1000)
+            ship.rotation_angle += milliseconds * (2* math.pi / 1000)
 
         laser = ship.laser_segment()
-
-        # p key saves screenshot (you can ignore this)
-        if keys[pygame.K_p] and screenshot_mode:
-            p_pressed = True
-        elif p_pressed:
-            pygame.image.save(screen, 'figures/asteroid_screenshot_%d.png' % milliseconds)
-            p_pressed = False
 
         # DRAW THE SCENE
         screen.fill(WHITE)
@@ -168,14 +168,14 @@ def main():
         if keys[pygame.K_SPACE]:
             draw_segment(screen, *laser)
 
-        draw_poly(screen,ship)
+        draw_poly(screen, ship, color=BLUE)
         draw_poly(screen, black_hole, color=BLACK, fill=True)
 
         for asteroid in asteroids:
             if keys[pygame.K_SPACE] and asteroid.does_intersect(laser):
                 asteroids.remove(asteroid)
             else:
-                draw_poly(screen, asteroid, color=GREEN)
+                draw_poly(screen, asteroid,)
 
 
         pygame.display.flip()
@@ -183,6 +183,4 @@ def main():
     pygame.quit()
 
 if __name__ == "__main__":
-    if '--screenshot' in sys.argv:
-        screenshot_mode = True
     main()
