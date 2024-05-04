@@ -1,6 +1,7 @@
 import math
 from typing import *
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
+
 
 # Exercise 10.9: Write a function contains(expression, variable) that checks whether the given expression contains any occurrence of the specified variable
 def contains(expression, variable):
@@ -98,12 +99,18 @@ def distinct_variables(maybe_variable):
 # For instance, class Variable() would become class Variable(Expression).
 # Then overload the Python arithmetic operations +, -, *, and / so that they produce Expression objects.
 # For instance, the code 2*Variable("x")+3 should yield Sum(Product(Number(2),Variable("x")),Number(3)).
-class Expression(metaclass = ABCMeta):
+class Expression(ABC):
+    @abstractmethod
+    def derivative(self, var):
+        pass
     @abstractmethod
     def expand(self):
         pass
     @abstractmethod
     def evaluate(self, **bindings):
+        pass
+    @abstractmethod
+    def substitute(self, var, expression):
         pass
     def __add__(self, other) -> Self:
         return Sum(self, pack(other))
@@ -134,33 +141,10 @@ class Number(Expression):
         return self
     def __repr__(self) -> str:
         return f"{self.number}"
-
-class Sum(Expression):
-    # 5 + A(x + y) => 5 + Ax + Ay
-    def expand(self):
-        return Sum(*[exp.expand() for exp in self.exps])
-    def evaluate(self, **bindings):
-        return sum(*[exp.evaluate(**bindings) for exp in self.exps])
-    def __init__(self, *exps):
-        self.exps = exps
-    def __repr__(self) -> str:
-        res = ""
-        inter = [exp for exp in self.exps]
-        for i in range(0, len(inter) - 1):
-            res += f"({inter[i]} + "
-        res += f"{inter[-1]})"
-        return res
-
-class Power(Expression):
-    def expand(self):
-        return super().expand()
-    def evaluate(self, **bindings):
-        return super().evaluate(**bindings)
-    def __init__(self, base, exponent) -> None:
-        self.base = base
-        self.exponent = exponent
-    def __repr__(self) -> str:
-        return f"{self.base}^{self.exponent}"
+    def derivative(self, var):
+        return Number(0)
+    def substitute(self, var, expression):
+        return self
 
 class Variable(Expression):
     def __init__(self, symbol: str) -> None:
@@ -174,6 +158,62 @@ class Variable(Expression):
             return KeyError(f"Variable {self.symbol} is not bound.")
     def __repr__(self) -> str:
         return f"{self.symbol}"
+    def derivative(self, var:Self):
+        return Number(1) if var.symbol == self.symbol else Number(0)
+    def substitute(self, var: Self, expression: Expression):
+        return expression if var.symbol == self.symbol else self
+class Sum(Expression):
+    # 5 + A(x + y) => 5 + Ax + Ay
+    def expand(self):
+        return Sum(*[exp.expand() for exp in self.exps])
+    def evaluate(self, **bindings):
+        return Sum(*[exp.evaluate(**bindings) for exp in self.exps])
+    def __init__(self, *exps):
+        self.exps = exps
+    def __repr__(self) -> str:
+        return "+".join("({})".format(exp.__repr__()) for exp in self.exps)
+    def derivative(self, var):
+        for exp in self.exps:
+            print(type(exp))
+        return Sum(*[exp.derivative(var) for exp in self.exps])
+    def substitute(self, var: Variable, expression: Expression):
+        return Sum(*[exp.substitute(var,expression) for exp in self.exps])
+
+class Power(Expression):
+    def expand(self):
+        return super().expand()
+    def evaluate(self, **bindings):
+        return super().evaluate(**bindings)
+    def __init__(self, base, exponent) -> None:
+        self.base = base
+        self.exponent = exponent
+    def __repr__(self) -> str:
+        return f"{self.base}^{self.exponent}"
+    def substitute(self, var: Variable, expression: Expression):
+        return Power(self.base.substitute(var, expression), self.exponent.substitute(var, expression))
+    def derivative(self, var):
+        # if the exponent is a constant number use the power rule
+        if isinstance(self.exponent, Number):
+            # power rule f(x) = ax^n  -> f'(x) = nax^n-1
+            power_rule = Product(
+                self.exponent,
+                Power(
+                    self.base,
+                    Number(self.exponent - 1)
+                )
+            )
+            return Product(self.base.derivative(var), power_rule)
+        # if the base is a constant number then use the exponential rule
+        elif isinstance(self.base, Number):
+            # exponential_rule 
+            exponential_rule = Product(
+                Apply(
+                    Function("ln"),
+                    Number(self.base.number)
+                ), self)
+            return Product(self.exponent.derivative(var), exponential_rule)
+        else:
+            raise Exception(f"can't take derivative of power {self}")
 
 class Product(Expression):
     def __init__(self, expr1: Expression, expr2: Expression) -> None:
@@ -195,6 +235,19 @@ class Product(Expression):
         return self.expr1.evaluate(**bindings) * self.expr2.evaluate(**bindings)
     def __repr__(self) -> str:
         return f"{self.expr1} * {self.expr2}"
+    def derivative(self, var):
+        return Sum(
+            Product(
+                self.expr1.derivative(var),
+                self.expr2
+            ),
+            Product(
+                self.expr1,
+                self.expr2.derivative(var)
+            )
+        )
+    def substitute(self, var: Variable, expression: Expression):
+        return Product(self.expr1.substitute(var, expression), self.expr2.substitute(var, expression))
 
 
 class Function():
@@ -208,7 +261,7 @@ class Function():
         return f"{self.name}"
 
 class Apply(Expression):
-    def __init__(self,function,argument):
+    def __init__(self,function: Function ,argument: Expression):
         self.function = function
         self.argument = argument
 
@@ -218,6 +271,15 @@ class Apply(Expression):
         return Apply(self.function, self.argument.expand())
     def __repr__(self) -> str:
         return f"{self.function}({self.argument})"
+    def substitute(self, var, expression):
+        return Apply(self.function, self.argument.substitute(var, expression))
+
+    #  g(h(x)) is h'(x) · g'(h(x))
+    def derivative(self, var: Variable):
+        return Product(
+            self.argument.derivative(var),
+            _derivatives[self.function.name].substitute(_var, self.argument)
+        )
 
 # Exercise 10.4: Implement a Quotient combinator representing one expression divided by another. How do you represent the following expression?
 class Quotient(Expression):
@@ -230,6 +292,13 @@ class Quotient(Expression):
         self.denominator = denominator
     def __repr__(self) -> str:
         return f"{self.numerator} / {self.denominator}"
+    def derivative(self, var):
+        return super().derivative(var)
+    def substitute(self, var, expression):
+        return Quotient(
+            self.numerator.substitute(var, expression),
+            self.denominator.substitute(var,expression)
+        )
 
 class Difference(Expression):
     def evaluate(self, **bindings):
@@ -241,6 +310,10 @@ class Difference(Expression):
         self.expr2 = expr2
     def __repr__(self) -> str:
         return f"{self.expr1} - {self.expr2}"
+    def derivative(self, var):
+        return super().derivative(var)
+    def substitute(self, var, expression):
+        return Difference(self.expr1.substitute(var, expression), self.expr2.substitute(var, expression))
 
 class Negative(Expression):
     def evaluate(self, **bindings):
@@ -251,4 +324,15 @@ class Negative(Expression):
         self.expr = expr
     def __repr__(self) -> str:
         return f"-{self.expr}"
+    def derivative(self, var):
+        return super().derivative(var)
+    def substitute(self, var, expression):
+        return Negative(self.expr.substitute(var, expression))
 
+_var = Variable('placeholder variable')
+
+_derivatives = {
+    "sin": Apply(Function("cos"), _var),
+    "cos": Product(Number(-1), Apply(Function("sin"), _var)),
+    "ln": Quotient(Number(1), _var)
+}

@@ -115,10 +115,8 @@ class Product(Expression):
             return Sum(*[Product(expanded1,e) for e in expanded2.exps])
         else:
             return Product(expanded1,expanded2)
-        
     def display(self):
         return "Product({},{})".format(self.exp1.display(),self.exp2.display())
-    
     def derivative(self,var):
         if not contains(self.exp1, var):
             return Product(self.exp1, self.exp2.derivative(var))
@@ -128,7 +126,6 @@ class Product(Expression):
             return Sum(
                 Product(self.exp1.derivative(var), self.exp2),
                 Product(self.exp1, self.exp2.derivative(var)))
-
     def substitute(self, var, exp):
         return Product(self.exp1.substitute(var,exp), self.exp2.substitute(var,exp))
     
