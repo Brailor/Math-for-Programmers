@@ -25,9 +25,9 @@ WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 ACCELERATION = 3
 DECLERATION = 1.3
-
+THURST = 3
 class PolygonModel():
-    def __init__(self, points: List[float]) -> None:
+    def __init__(self, points: List[float], bounce = True) -> None:
         self.points = points
         self.rotation_angle = 0
         self.x = 0
@@ -35,7 +35,8 @@ class PolygonModel():
         self.vx = 0
         self.vy = 0
         self.draw_center = False 
-        self.graviyt = 0
+        self.gravity = 0
+        self.bounce = bounce
 
     def does_collide(self, other_polygon: Type[Self]):
         for other_segment in other_polygon.segments():
@@ -59,25 +60,36 @@ class PolygonModel():
                 return True
         return False
     
-    def move(self, milliseconds):
-        dx, dy = (self.vx * milliseconds / 1000.0, self.vy * milliseconds / 1000.0)
-        next_pos_vector = vectors.add((self.x, self.y), (dx, dy))
-        self.x = next_pos_vector[0]
-        self.y = next_pos_vector[1]
+    def move(self, milliseconds, gravitational_source, thurst_vector):
+        tx,ty = thurst_vector
+        gx,gy = gravitational_force_field(gravitational_source, self.x, self.y)
+        ax = tx + gx
+        ay = ty + gy
+        self.vx += ax * milliseconds/1000.0
+        self.vy += ay * milliseconds/1000.0
 
-        if self.x < -10:
-            self.x += 20
-        if self.y < -10:
-            self.y += 20
-        if self.x > 10:
-            self.x -= 20
-        if self.y > 10:
-            self.y -= 20
+        self.x += self.vx * milliseconds/1000.0
+        self.y += self.vy * milliseconds/1000.0
+
+        if self.bounce:
+            if self.x < -10 or self.x > 10:
+                self.vx = - self.vx
+            if self.y < -10 or self.y > 10:
+                self.vy = - self.vy
+        else:
+            if self.x < -10:
+                self.x += 20
+            if self.y < -10:
+                self.y += 20
+            if self.x > 10:
+                self.x -= 20
+            if self.y > 10:
+                self.y -= 20
 
 
 class Ship(PolygonModel):
     def __init__(self) -> None:
-        super().__init__([(0.5,0), (-0.25,0.25), (-0.25,-0.25)])
+        super().__init__([(0.5,0), (-0.25,0.25), (-0.25,-0.25)], bounce=False)
     def laser_segment(self):
         dist = 20.0 * math.sqrt(2)
         tip_x,tip_y = self.transformed()[0]
@@ -119,46 +131,42 @@ def main():
     screen = pygame.display.set_mode([WIDTH,HEIGHT])
     
     pygame.display.set_caption("Asteroids!")
-    black_hole = BlackHole(0.1)
+    bh1 = BlackHole(0.1)
+    bh1.x = -3
+    bh1.y = 4
+    bh2 = BlackHole(0.1)
+    bh2.x = 2
+    bh2.y = 1
+    bh_sum = 
 
     done = False
     clock = pygame.time.Clock()
     while not done:
-
         clock.tick()
 
         for event in pygame.event.get(): # User did something
             if event.type == pygame.QUIT: # If user clicked close
-                done=True # Flag that we are done so we exit this loop
+                done = True # Flag that we are done so we exit this loop
 
         # UPDATE THE GAME STATE
-
         milliseconds = clock.get_time()
         keys = pygame.key.get_pressed()
+        thrust_vector = (0,0)
 
         for ast in asteroids:
-            # pass
-            ast.move(milliseconds)
+            ast.move(milliseconds, black_hole, (0,0))
         
         if keys[pygame.K_UP]:
-            ax = ACCELERATION * math.cos(ship.rotation_angle)
-            ay = ACCELERATION * math.sin(ship.rotation_angle)
-            ship.vx += ax * milliseconds / 1000.0
-            ship.vy += ay * milliseconds / 1000.0
-
+            thrust_vector = vectors.to_cartesian((THURST, ship.rotation_angle))
         if keys[pygame.K_DOWN]:
-            ax = DECLERATION * math.cos(ship.rotation_angle)
-            ay = DECLERATION * math.sin(ship.rotation_angle)
-            ship.vx -= ax * milliseconds / 1000.0
-            ship.vy -= ay * milliseconds / 1000.0
-        
-        ship.move(milliseconds)
-
+            thrust_vector = vectors.to_cartesian((-THURST, ship.rotation_angle))
         if keys[pygame.K_LEFT]:
             ship.rotation_angle -= milliseconds * (2* math.pi / 1000)
 
         if keys[pygame.K_RIGHT]:
             ship.rotation_angle += milliseconds * (2* math.pi / 1000)
+        
+        ship.move(milliseconds, black_hole, thrust_vector)
 
         laser = ship.laser_segment()
 
@@ -175,8 +183,7 @@ def main():
             if keys[pygame.K_SPACE] and asteroid.does_intersect(laser):
                 asteroids.remove(asteroid)
             else:
-                draw_poly(screen, asteroid,)
-
+                draw_poly(screen, asteroid)
 
         pygame.display.flip()
 

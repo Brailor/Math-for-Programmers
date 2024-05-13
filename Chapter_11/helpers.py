@@ -1,4 +1,5 @@
 import pygame
+import vectors
 from random import randint
 from typing import *
 # HELPERS / SETTINGS
@@ -35,3 +36,7 @@ def random_x_y(asteroid):
     asteroid.x = randint(-9,9)
     asteroid.y = randint(-9,9)
     return asteroid
+
+def gravitational_force_field(source, x, y):
+    relative_position = (x - source.x, y - source.y)
+    return vectors.scale(- source.gravity, relative_position)
