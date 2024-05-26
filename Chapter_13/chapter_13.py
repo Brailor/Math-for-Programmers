@@ -20,3 +20,16 @@ def fourier_series(a0, a, b):
         result = a0 * const(t) + sum(cos_terms) + sum(sin_terms)
         return result
     return aux
+
+def inner_product(f, g, N=1000):
+    dt = 1 / N
+    return 2 * sum([f(t) * g(t) * dt for t in np.arange(0, 1, dt)])
+
+def s(n):
+    return lambda t: math.sin(2 * math.pi * n * t)
+
+def c(n):
+    return lambda t: math.cos(2 * math.pi * n * t)
+
+def const_2(n):
+    return 1 / math.sqrt(2)
